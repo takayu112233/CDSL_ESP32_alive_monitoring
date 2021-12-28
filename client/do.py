@@ -25,14 +25,12 @@ def get_wifi_mac(wifi):
     print("[wifi_mac] : " + wifi_mac)
     return wifi_mac
 
-def get_bt_mac():
+def get_bt_mac(ble):
     """
     Wi-FiのMacアドレスを取得する関数
     """
-    ble = ubluetooth.BLE()
     ble.active(True)
     bt_mac = ubinascii.hexlify((ble.config("mac")[1]),':').decode()
-    ble.active(False)
     print("[bt_mac] : " + bt_mac)
     return bt_mac
 
@@ -159,6 +157,7 @@ def bt_cb(event, data):
     global scan_dict
     global search_list
     global mqtt_client
+    global ble
 
     if event == 5:
         addr_type, addr, connectable, rssi, adv_data = data
@@ -172,6 +171,7 @@ def bt_cb(event, data):
         
     if event == 6:
         print("[ble_scan] : " + "end")
+        bt_send_start(ble)
         sorted(scan_dict.items())
         for k, v in scan_dict.items():
             print(k, v)
@@ -200,15 +200,12 @@ def bt_scan_start(bt_mac):
     ble.irq(bt_cb)
     ble.gap_scan(2000, 1, 1)
 
-def bt_send_start():
+def bt_send_start(ble):
     """
     Bluetooth電波を発出開始する関数
     """
-    ble = ubluetooth.BLE()
-    ble.active(True)
     ble.gap_advertise(100,b'0')
     print("[ble_send] : " + "start")
-    return ble
 
 def bt_send_end(ble):
     """
@@ -220,12 +217,18 @@ def bt_send_end(ble):
 
 
 if __name__ == "__main__":
+
     garbage_collection()
-    bt_mac = get_bt_mac()
     wifi_mac = get_wifi_mac(wifi)
     global_ip = get_global_ip()
     local_ip = get_local_ip(wifi)
     garbage_collection()
+
+    ble = ubluetooth.BLE()
+    ble.active(True)
+    bt_send_start(ble)
+
+    bt_mac = get_bt_mac(ble)
 
     sub_topics = ("c/all/#" , "c/" + global_ip + "/#" , "c/" + wifi_mac + "/#")
 
@@ -233,8 +236,6 @@ if __name__ == "__main__":
 
     send_join_packet(wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,KEEP_ALIVE_TIME,HEART_BEAT_TIME)
     tim = ping_timer_start(HEART_BEAT_TIME)
-
-    ble = bt_send_start()
 
     time_count = 0
     if(DEBAG_DISCONNECT_TIME != -1):   
