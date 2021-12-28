@@ -8,16 +8,14 @@ import ujson
 import urequests
 import uping
 import ubluetooth
+import config
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
 DEBAG_DISCONNECT_TIME = -1#[s] -1は無効
 SERVER = "192.168.0.250"
 
-if not 'NAME' in locals():
-    NAME = "-"
-if not 'wifi' in locals():
-    wifi = "-"
+NAME = config.NAME
 
 def get_wifi_mac(wifi):
     """

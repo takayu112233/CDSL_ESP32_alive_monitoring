@@ -1,8 +1,4 @@
-WIFI_CONFIG = [("SSID","PASS")
-            ,("SSID","PASS")
-            ,("SSID","PASS")]
-
-NAME = "Y.T_ESP"
+import config
 
 def do_connect(wifi_config):
     import network
@@ -25,8 +21,8 @@ def do_connect(wifi_config):
     return sta_if
 
 if __name__ == "__main__":
-    print("power on:" + NAME)
-    wifi = do_connect(WIFI_CONFIG)
+    print("power on:" + config.NAME)
+    wifi = do_connect(config.WIFI_CONFIG)
     execfile("do.py")
     
 
