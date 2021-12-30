@@ -10,7 +10,7 @@ import uping
 import ubluetooth
 import config
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
@@ -87,7 +87,10 @@ def sub_cb(topic, msg):
             pub("s/return_ping" , ujson.dumps(dic) , mqtt_client)
 
         elif(topic[2] == "search_bt"):
-            bt_scan_start(msg)
+            global search_list
+            data = msg.split(",")
+            search_list[data[0]] = data[1]
+            bt_scan_start()
 
 def pub(topic , msg , mqtt_client):
     """
@@ -164,6 +167,7 @@ def bt_cb(event, data):
     global search_list
     global mqtt_client
     global ble
+    global bt_scan
 
     if event == 5:
         addr_type, addr, connectable, rssi, adv_data = data
@@ -181,30 +185,37 @@ def bt_cb(event, data):
         sorted(scan_dict.items())
         for k, v in scan_dict.items():
             print(k, v)
+
         for search in search_list:
             if(search in scan_dict):
-
-                dic = {"bt_mac":search,"result":"ok"}
+                dic = {"bt_mac":search,"result":"ok","wifi_mac":search_list[search]}
                 pub("s/return_bt" , ujson.dumps(dic) , mqtt_client)
                 print("[ble_scan] bt_mac: " + search + " result: OK")
             else:
-                dic = {"bt_mac":search,"result":"ng"}
+                dic = {"bt_mac":search,"result":"ng","wifi_mac":search_list[search]}
                 pub("s/return_bt" , ujson.dumps(dic) , mqtt_client)
                 print("[ble_scan] bt_mac: " + search + " result: NG")
+        
+        search_list = {}
+        bt_scan = False
 
-def bt_scan_start(bt_mac):
+search_list = {}
+bt_scan = False
+
+def bt_scan_start():
     """
     指定したBluetooth電波を検出できるかスキャン
     """
     global scan_dict
-    global search_list
     global ble
-    print("[ble_scan] : " + "start")
-    search_list = []
-    scan_dict = {}
-    search_list.append(bt_mac)
-    ble.irq(bt_cb)
-    ble.gap_scan(2000, 1, 1)
+    global bt_scan
+
+    if(not bt_scan):
+        print("[ble_scan] : " + "start")
+        bt_scan = True
+        scan_dict = {}
+        ble.irq(bt_cb)
+        ble.gap_scan(2000, 1, 1)
 
 def bt_send_start(ble):
     """
@@ -220,6 +231,7 @@ def bt_send_end(ble):
     ble.gap_advertise(None,b'0')
     print("[ble_send] : " + "stop")
     ble.active(False)
+
 
 
 if __name__ == "__main__":
