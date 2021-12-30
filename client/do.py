@@ -10,7 +10,7 @@ import uping
 import ubluetooth
 import config
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
@@ -77,12 +77,16 @@ def sub_cb(topic, msg):
     topic = topic.split("/")
 
     if(len(topic) == 3):
-        if(topic[2] == "want_ping"):
-            result = icmp_check(msg)
-            dic = {"global_ip":global_ip,"want_ip":msg,"result":result}
+        if(topic[2] == "want_join"):
+            send_join_packet(NAME,VERSION,wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,KEEP_ALIVE_TIME,HEART_BEAT_TIME)
+
+        elif(topic[2] == "want_ping"):
+            data = msg.split(",")
+            result = icmp_check(data[0])
+            dic = {"global_ip":global_ip,"want_ip":data[0],"wifi_mac":data[1],"result":result}
             pub("s/return_ping" , ujson.dumps(dic) , mqtt_client)
 
-        if(topic[2] == "search_bt"):
+        elif(topic[2] == "search_bt"):
             bt_scan_start(msg)
 
 def pub(topic , msg , mqtt_client):
@@ -181,11 +185,11 @@ def bt_cb(event, data):
             if(search in scan_dict):
 
                 dic = {"bt_mac":search,"result":"ok"}
-                pub("s/return_ping" , ujson.dumps(dic) , mqtt_client)
+                pub("s/return_bt" , ujson.dumps(dic) , mqtt_client)
                 print("[ble_scan] bt_mac: " + search + " result: OK")
             else:
                 dic = {"bt_mac":search,"result":"ng"}
-                pub("s/return_ping" , ujson.dumps(dic) , mqtt_client)
+                pub("s/return_bt" , ujson.dumps(dic) , mqtt_client)
                 print("[ble_scan] bt_mac: " + search + " result: NG")
 
 def bt_scan_start(bt_mac):
