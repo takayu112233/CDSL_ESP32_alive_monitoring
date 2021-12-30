@@ -10,6 +10,8 @@ import uping
 import ubluetooth
 import config
 
+VERSION = "1.0.0"
+
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
 DEBAG_DISCONNECT_TIME = -1#[s] -1は無効
@@ -99,11 +101,11 @@ def server_disconnect(wifi_mac,mqtt_client):
     pub("s/disconnect", ujson.dumps(dic) ,mqtt_client)
     mqtt_client.disconnect() 
 
-def send_join_packet(wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,keep_alive_time,heart_beat_time):
+def send_join_packet(name,version,wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,keep_alive_time,heart_beat_time):
     """
     サーバに接続を通知する関数
     """
-    dic = {"wifi_mac":wifi_mac, "bt_mac":bt_mac, "local_ip":local_ip ,"global_ip":global_ip ,"keep_alive_time":keep_alive_time ,"heart_beat_time":heart_beat_time}
+    dic = {"name":name, "version":version, "wifi_mac":wifi_mac, "bt_mac":bt_mac, "local_ip":local_ip ,"global_ip":global_ip ,"keep_alive_time":keep_alive_time ,"heart_beat_time":heart_beat_time}
     pub("s/join", ujson.dumps(dic), mqtt_client)
 
 def mqtt_connect(server,sub_topics,name):
@@ -234,7 +236,7 @@ if __name__ == "__main__":
 
     mqtt_client = mqtt_connect(SERVER,sub_topics,NAME)
 
-    send_join_packet(wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,KEEP_ALIVE_TIME,HEART_BEAT_TIME)
+    send_join_packet(NAME,VERSION,wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,KEEP_ALIVE_TIME,HEART_BEAT_TIME)
     tim = ping_timer_start(HEART_BEAT_TIME)
 
     time_count = 0
