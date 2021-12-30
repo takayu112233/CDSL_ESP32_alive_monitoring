@@ -22,6 +22,29 @@ port = 1883
 ping = {}
 disconnect_time = {}
 
+version = "1.0.0"
+
+class Client:
+    def __init__(self,global_ip,local_ip,name,bt_mac,wifi_mac,heart_beat_time,keep_alive_time,version) :
+        self.global_ip = global_ip
+        self.local_ip = local_ip
+        self.name = name
+        self.bt_mac = bt_mac
+        self.wifi_mac = wifi_mac
+        self.heart_beat_time = heart_beat_time
+        self.keep_alive_time = keep_alive_time
+        self.version = version
+
+        self.status = 0
+        self.lasttime = time.time()
+
+        print_log("[join] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
+
+    def receive_ping(self):
+        self.lasttime = time.time()
+        self.status = 0
+        print_log("[ping] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
+
 def connect_mqtt():
     """
     MQTTブローカサーバに接続
@@ -65,11 +88,9 @@ def on_message(client, userdata, msg):
     """
     MQTTメッセージの受信した際の処理
     """
-    #print_log(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
     topic_data = msg.topic.split("/")
     if(topic_data[1] == "join"):
         client_data_list = json.loads(msg.payload.decode())
-        #print_log(client_data_list)
 
         global_ip = client_data_list["global_ip"]
         local_ip = client_data_list["local_ip"]
@@ -85,34 +106,6 @@ def on_message(client, userdata, msg):
     if(topic_data[1] == "ping"):
         client_data_list = json.loads(msg.payload.decode())
         client_data[client_data_list["wifi_mac"]].receive_ping()
-
-
-class Client:
-    count = 0
-
-    @classmethod
-    def get_count(cls):
-        return cls.count
-    
-    def __init__(self,global_ip,local_ip,name,bt_mac,wifi_mac,heart_beat_time,keep_alive_time,version) :
-        self.global_ip = global_ip
-        self.local_ip = local_ip
-        self.name = name
-        self.bt_mac = bt_mac
-        self.wifi_mac = wifi_mac
-        self.heart_beat_time = heart_beat_time
-        self.keep_alive_time = keep_alive_time
-        self.version = version
-
-        self.status = 0
-        self.lasttime = time.time()
-
-        print_log("[join] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
-
-    def receive_ping(self):
-        self.lasttime = time.time()
-        self.status = 0
-        print_log("[ping] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
 
 def check_time(client_data):
     now_time = time.time()
@@ -138,6 +131,7 @@ def print_log(data):
 
 
 if __name__ == "__main__":
+    print("[version] " + version)
 
     client_data = {}
 
@@ -152,7 +146,7 @@ if __name__ == "__main__":
         if(connect):
             time.sleep(1)
             check_time(client_data)
-    else:
-        pass
+        else:
+            pass
     
     
