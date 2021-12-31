@@ -1,4 +1,5 @@
 # pip3 install paho-mqtt
+from threading import local
 from paho.mqtt import client as mqtt_client
 import time
 import datetime
@@ -22,7 +23,7 @@ port = 1883
 ping = {}
 disconnect_time = {}
 
-version = "1.1.0"
+version = "1.2.0"
 
 class Client:
     def __init__(self,global_ip,local_ip,name,bt_mac,wifi_mac,heart_beat_time,keep_alive_time,version) :
@@ -40,8 +41,12 @@ class Client:
         self.status = 0
         self.lasttime = time.time()
 
-        self.ping_result = []
-        self.bt_result = []
+        self.ping_result = {}
+        self.bt_result = {}
+        self.ping_result["ok"] = 0
+        self.ping_result["ng"] = 0
+        self.bt_result["ok"] = 0
+        self.bt_result["ng"] = 0
 
         print_log("[join] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
 
@@ -53,9 +58,7 @@ class Client:
             global_ip_cnt_add(self.global_ip)
         self.lasttime = time.time()
         self.status = 0
-        print_log("[ping] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
-
-global_ip_cnt = {} # グローバルIP毎の接続台数を入れるDictionary(warningは入れず)
+        #print_log("[ping] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
 
 def global_ip_cnt_add(global_ip):
     """
@@ -158,11 +161,34 @@ def on_message(client, userdata, msg):
         else:
             client_data[client_data_list["wifi_mac"]].receive_ping()
 
-    if(topic_data[1] == "/s/return_bt"):
-        pass
+    if(topic_data[1] == "return_bt"):
+        return_bt_data_list = json.loads(msg.payload.decode())
+        wifi_mac = return_bt_data_list["wifi_mac"]
+        if return_bt_data_list["result"] == "ok":
+            client_data[return_bt_data_list["wifi_mac"]].bt_result["ok"] += 1
+        if return_bt_data_list["result"] == "ng":
+            client_data[wifi_mac].bt_result["ng"] += 1
+        print_log("[system] return_bt" + wifi_mac + " <ng>" + str(client_data[wifi_mac].bt_result["ng"]) + " <ok>" + str(client_data[wifi_mac].bt_result["ok"]))
 
-    if(topic_data[1] == "/s/return_ping"):
-        pass
+    if(topic_data[1] == "return_ping"):
+        return_ping_data_list = json.loads(msg.payload.decode())
+        wifi_mac = return_ping_data_list["wifi_mac"]
+        if return_ping_data_list["result"] == "ok":
+            client_data[wifi_mac].ping_result["ok"] += 1
+        if return_ping_data_list["result"] == "ng":
+            client_data[wifi_mac].ping_result["ng"] += 1
+        print_log("[system] return_ping" + wifi_mac + " <ng>" + str(client_data[wifi_mac].ping_result["ng"]) + " <ok>" + str(client_data[wifi_mac].ping_result["ok"]))
+
+
+
+def want_ping_and_bt(global_ip,bt_mac,wifi_mac,local_ip):
+    topic = "c/" + global_ip + "/want_ping"
+    msg = local_ip + "," + wifi_mac
+    publish(topic , msg)
+
+    topic = "c/" + global_ip + "/search_bt"
+    msg = bt_mac + "," + wifi_mac
+    publish(topic , msg)
 
 def check_time(client_data):
     now_time = time.time()
@@ -170,20 +196,60 @@ def check_time(client_data):
         if client_data[i].heart_beat_time * 1.5 - (now_time - client_data[i].lasttime) <= 0 and client_data[i].status == 0:
             client_data[i].status = -1 #warning
             global_ip_cnt_remove(client_data[i].global_ip)
-            client_data[i].ping_result = []
-            client_data[i].bt_result = []
+            client_data[i].ping_result = {}
+            client_data[i].bt_result = {}
+            client_data[i].ping_result["ok"] = 0
+            client_data[i].ping_result["ng"] = 0
+            client_data[i].bt_result["ok"] = 0
+            client_data[i].bt_result["ng"] = 0
             print_log("[warning] <wifi_mac> " + client_data[i].wifi_mac + "  <msg> HeartBeat timeout")
+            want_ping_and_bt(client_data[i].global_ip, client_data[i].bt_mac, client_data[i].wifi_mac, client_data[i].local_ip)        
     
     del_client = []
     for i in client_data:
-        if client_data[i].keep_alive_time * 1.5 - (now_time - client_data[i].lasttime) <= 0 and client_data[i].status == -1:
+        if client_data[i].keep_alive_time * 1.5 - (now_time - client_data[i].lasttime) <= 0 and not client_data[i].status != -1:
             print_log("[disconnect] <wifi_mac> " + client_data[i].wifi_mac + "  <msg> KeepAliveTime timeout")
             del_client.append(i)
 
     for key in del_client:
         del client_data[key]
     
-    print_log("[system] connect_count: " + str(len(client_data)))
+def check_connection(client_data,global_ip_cnt):
+    """
+    ここで切断可能IoT端末を切断する
+    """
+    del_client = []
+
+    for wifi_mac in client_data:
+        if(client_data[wifi_mac].status == -1):
+            if(not client_data[wifi_mac].ping_result["ok"] == 0):
+                print_log("[system] " +  client_data[wifi_mac].name + "のPINGを他の機器が受信,ソフトウェアに異常発生の可能性")
+                client_data[wifi_mac].status = -2
+                break
+
+            if(not client_data[wifi_mac].bt_result["ok"] == 0):
+                print_log("[system] " +  client_data[wifi_mac].name + "のBT電波を他の機器が受信,ネットワークに異常発生の可能性")
+                client_data[wifi_mac].status = -2
+                break
+
+            global_ip_data = client_data[wifi_mac].global_ip
+            if not global_ip_cnt.get(global_ip_data) == None:
+                global_ip_cnt_data = global_ip_cnt[global_ip_data]
+                if(client_data[wifi_mac].bt_result["ng"] >= global_ip_cnt_data and client_data[wifi_mac].ping_result["ng"] >= global_ip_cnt_data):
+                    print_log("[system] " +  client_data[wifi_mac].name + "同一セグメント上のIoT機器がBTとPINGを受信できません，電源遮断の可能性 切断処理を行います．")
+                    client_data[wifi_mac].status = -2
+                    del_client.append(wifi_mac)
+                    break
+            else:
+                print_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません，タイムアウトまで待機")
+                client_data[wifi_mac].status = -2
+
+    
+    for key in del_client:
+        print_log("[disconnect] <wifi_mac> " + client_data[key].wifi_mac + "  <msg> --")
+        del client_data[key]
+                
+
 
 def print_log(data):
     dt_now = datetime.datetime.now()
@@ -193,7 +259,8 @@ def print_log(data):
 if __name__ == "__main__":
     print("[version] " + version)
 
-    client_data = {}
+    client_data = {} # IoT機器のデータを入れるDictionary
+    global_ip_cnt = {} # グローバルIP毎の接続台数を入れるDictionary(warningは入れず)
 
     client = connect_mqtt()
     subscribe(client)
@@ -206,6 +273,7 @@ if __name__ == "__main__":
         if(connect):
             time.sleep(1)
             check_time(client_data)
+            check_connection(client_data,global_ip_cnt)
             #print(global_ip_cnt)
         else:
             pass
