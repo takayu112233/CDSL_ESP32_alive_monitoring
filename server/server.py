@@ -241,7 +241,7 @@ def check_connection(client_data,global_ip_cnt):
                     del_client.append(wifi_mac)
                     break
             else:
-                print_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません，タイムアウトまで待機")
+                print_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません ネットワークに異常がある可能性があります，タイムアウトまで待機")
                 client_data[wifi_mac].status = -2
 
     
