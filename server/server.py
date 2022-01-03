@@ -189,6 +189,12 @@ def on_message(client, userdata, msg):
             client_data[wifi_mac].ping_result["ng"] += 1
         print_log("[system] return_ping" + wifi_mac + " <ng>" + str(client_data[wifi_mac].ping_result["ng"]) + " <ok>" + str(client_data[wifi_mac].ping_result["ok"]))
 
+    if(topic_data[1]=="disconnect"):
+        return_ping_data_list = json.loads(msg.payload.decode())
+        wifi_mac = return_ping_data_list["wifi_mac"]
+        del client_data[wifi_mac]
+        print_log("[disconnect] <wifi_mac> " + wifi_mac + "  <msg> disconnect msg receive")
+
 def want_ping_and_bt(global_ip,bt_mac,wifi_mac,local_ip):
     """
     同一セグメント上のIoT機器に
