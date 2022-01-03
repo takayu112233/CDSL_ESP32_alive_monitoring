@@ -7,14 +7,6 @@ import os
 import json
 import time
 
-dt_now = datetime.datetime.now()
-dir = "./data"
-if not os.path.exists(dir):
-    os.makedirs(dir)
-out_file_path = dir + "/" + dt_now.strftime('%Y%m%d_%H%M%S') + ".csv"
-with open(out_file_path, mode='w') as f:
-    f.write("time,key,keepalivetime,killtime,disconnecttime,disconnect_system,delay\n")
-
 topics = ("s/ping","s/join","s/disconnect","s/return_bt","s/return_ping")
 
 broker = '192.168.0.250'
@@ -24,6 +16,27 @@ ping = {}
 disconnect_time = {}
 
 version = "1.2.0"
+
+broker = '192.168.0.250'
+port = 1883
+
+ping = {}
+disconnect_time = {}
+
+version = "1.3.0"
+
+class Log:
+    def __init__(self,first=""):
+        dt_now = datetime.datetime.now()
+        dir = "./data"
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        self.out_file_path = dir + "/" + dt_now.strftime('%Y%m%d_%H%M%S') + ".csv"
+
+    def write(self,text):
+        with open(self.out_file_path, mode='a') as f:
+            dt_now = datetime.datetime.now()
+            f.write("[" + dt_now.strftime('%Y-%m-%d %H:%M:%S') + "] " + str(text) + "\n")
 
 class Client:
     def __init__(self,global_ip,local_ip,name,bt_mac,wifi_mac,heart_beat_time,keep_alive_time,version) :
@@ -252,12 +265,15 @@ def check_connection(client_data,global_ip_cnt):
 
 
 def print_log(data):
+    global log
     dt_now = datetime.datetime.now()
     print("[" + dt_now.strftime('%Y-%m-%d %H:%M:%S') + "] " + str(data))
+    log.write(str(data))
 
 
 if __name__ == "__main__":
-    print("[version] " + version)
+    log = Log()
+    print_log("[system] version: " + version)
 
     client_data = {} # IoT機器のデータを入れるDictionary
     global_ip_cnt = {} # グローバルIP毎の接続台数を入れるDictionary(warningは入れず)
