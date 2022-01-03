@@ -1,5 +1,3 @@
-# pip3 install paho-mqtt
-from threading import local
 from paho.mqtt import client as mqtt_client
 import time
 import datetime
@@ -7,25 +5,18 @@ import os
 import json
 import time
 
+version = "1.3.1"
+broker = '192.168.0.250'
+port = 1883
+
 topics = ("s/ping","s/join","s/disconnect","s/return_bt","s/return_ping")
-
-broker = '192.168.0.250'
-port = 1883
-
 ping = {}
 disconnect_time = {}
-
-version = "1.2.0"
-
-broker = '192.168.0.250'
-port = 1883
-
-ping = {}
-disconnect_time = {}
-
-version = "1.3.0"
 
 class Log:
+    """
+    ログ書き出し用
+    """
     def __init__(self,first=""):
         dt_now = datetime.datetime.now()
         dir = "./data"
@@ -39,6 +30,10 @@ class Log:
             f.write("[" + dt_now.strftime('%Y-%m-%d %H:%M:%S') + "] " + str(text) + "\n")
 
 class Client:
+    """
+    IoT機器の情報を管理するクラス
+    接続時に生成され，切断時に削除される
+    """
     def __init__(self,global_ip,local_ip,name,bt_mac,wifi_mac,heart_beat_time,keep_alive_time,version) :
         self.global_ip = global_ip
         self.local_ip = local_ip
@@ -141,8 +136,7 @@ def publish(topic,msg):
     MQTTメッセージの送信処理
     """
     print_log("[system] publish: <topic>" + topic + " <msg>" + msg)
-    client.publish(topic,msg)
-    
+    client.publish(topic,msg)  
 
 def on_message(client, userdata, msg):
     """
@@ -192,9 +186,11 @@ def on_message(client, userdata, msg):
             client_data[wifi_mac].ping_result["ng"] += 1
         print_log("[system] return_ping" + wifi_mac + " <ng>" + str(client_data[wifi_mac].ping_result["ng"]) + " <ok>" + str(client_data[wifi_mac].ping_result["ok"]))
 
-
-
 def want_ping_and_bt(global_ip,bt_mac,wifi_mac,local_ip):
+    """
+    同一セグメント上のIoT機器に
+    Bluetooth電波の受信状況とPING応答の有無を要求するためのメッセージをPublishする処理
+    """
     topic = "c/" + global_ip + "/want_ping"
     msg = local_ip + "," + wifi_mac
     publish(topic , msg)
@@ -204,6 +200,10 @@ def want_ping_and_bt(global_ip,bt_mac,wifi_mac,local_ip):
     publish(topic , msg)
 
 def check_time(client_data):
+    """
+    各クライアントのKeep Alive Time タイムアウト時間と
+    Heart Beatタイムアウト時間を経過していないか調べる関数
+    """
     now_time = time.time()
     for i in client_data:
         if client_data[i].heart_beat_time * 1.5 - (now_time - client_data[i].lasttime) <= 0 and client_data[i].status == 0:
@@ -257,19 +257,18 @@ def check_connection(client_data,global_ip_cnt):
                 print_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません ネットワークに異常がある可能性があります，タイムアウトまで待機")
                 client_data[wifi_mac].status = -2
 
-    
     for key in del_client:
         print_log("[disconnect] <wifi_mac> " + client_data[key].wifi_mac + "  <msg> --")
         del client_data[key]
                 
-
-
 def print_log(data):
+    """
+    ログ表示用
+    """
     global log
     dt_now = datetime.datetime.now()
     print("[" + dt_now.strftime('%Y-%m-%d %H:%M:%S') + "] " + str(data))
     log.write(str(data))
-
 
 if __name__ == "__main__":
     log = Log()
@@ -290,7 +289,6 @@ if __name__ == "__main__":
             time.sleep(1)
             check_time(client_data)
             check_connection(client_data,global_ip_cnt)
-            #print(global_ip_cnt)
         else:
             pass
     
