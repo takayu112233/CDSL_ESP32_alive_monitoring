@@ -17,17 +17,20 @@ class Log:
     """
     ログ書き出し用
     """
-    def __init__(self,first=""):
+    def __init__(self,first="text"):
         dt_now = datetime.datetime.now()
         dir = "./data"
         if not os.path.exists(dir):
             os.makedirs(dir)
         self.out_file_path = dir + "/" + dt_now.strftime('%Y%m%d_%H%M%S') + ".csv"
+        with open(self.out_file_path, mode='w') as f:
+            dt_now = datetime.datetime.now()
+            f.write("time" + "," + str(first) + "\n")
 
     def write(self,text):
         with open(self.out_file_path, mode='a') as f:
             dt_now = datetime.datetime.now()
-            f.write("[" + dt_now.strftime('%Y-%m-%d %H:%M:%S') + "] " + str(text) + "\n")
+            f.write(dt_now.strftime('%Y/%m/%d %H:%M:%S') + "," + str(text) + "\n")
 
 class Client:
     """
