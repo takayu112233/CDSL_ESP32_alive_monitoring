@@ -4,16 +4,38 @@ import datetime
 import os
 import json
 import time
+import mysql.connector
 
-FILE_MEMO = "台数3台"
+FILE_MEMO = "台数5台"
 
-VERSION = "1.3.3_e"
+VERSION = "1.4.3_e"
 BROKER = '192.168.0.250'
 PORT = 1883
 
 TOPICS = ("s/ping","s/join","s/disconnect","s/return_bt","s/return_ping","s/die")
 
 ping = {}
+
+class Mysql:
+    def __init__(self):
+        self.conn = mysql.connector.connect(
+            host='localhost',
+            port='3306',
+            user='user',
+            password='asdf1234',
+            database='iot'
+        )
+        if self.conn.is_connected():
+            print_log("[system] MYSQL_SERVER_Connected")
+        else:
+            print_log("[system] MYSQL_SERVER_Err")
+
+    def insert_log(self,text,color):
+        cur = self.conn.cursor()
+        cur.execute("INSERT INTO log_t(log_text,log_color) VALUES (%s,%s)", (text,color))
+        cur.execute("commit")
+        cur.close()
+
 
 class Log:
     """
@@ -63,6 +85,7 @@ class Client:
 
         self.calc_time_flag = False #実験用
 
+        mysql.insert_log("[join] <wifi_mac> " + self.wifi_mac + " <name> " + self.name,2)
         print_log("[join] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
 
     def set_die_time(self,elapsed_time):
@@ -250,12 +273,14 @@ def check_time(client_data):
             client_data[i].ping_result["ng"] = 0
             client_data[i].bt_result["ok"] = 0
             client_data[i].bt_result["ng"] = 0
+            mysql.insert_log("[warning] <wifi_mac> " + client_data[i].wifi_mac + "  <msg> HeartBeat timeout",3)
             print_log("[warning] <wifi_mac> " + client_data[i].wifi_mac + "  <msg> HeartBeat timeout")
             want_ping_and_bt(client_data[i].global_ip, client_data[i].bt_mac, client_data[i].wifi_mac, client_data[i].local_ip)        
     
     del_client = []
     for i in client_data:
         if client_data[i].keep_alive_time * 1.5 - (now_time - client_data[i].lasttime) <= 0 and not client_data[i].status != -1:
+            mysql.insert_log("[disconnect] <wifi_mac> " + client_data[i].wifi_mac + "  <msg> KeepAliveTime timeout",4)
             print_log("[disconnect] <wifi_mac> " + client_data[i].wifi_mac + "  <msg> KeepAliveTime timeout")
             del_client.append(i)
 
@@ -273,11 +298,13 @@ def check_connection(client_data,global_ip_cnt):
         if(client_data[wifi_mac].status == -1):
             if(not client_data[wifi_mac].ping_result["ok"] == 0):
                 print_log("[system] " +  client_data[wifi_mac].name + "のPINGを他の機器が受信,ソフトウェアに異常発生の可能性")
+                mysql.insert_log("[system] " +  client_data[wifi_mac].name + "のPINGを他の機器が受信,ソフトウェアに異常発生の可能性",5)
                 client_data[wifi_mac].status = -2
                 break
 
             if(not client_data[wifi_mac].bt_result["ok"] == 0):
                 print_log("[system] " +  client_data[wifi_mac].name + "のBT電波を他の機器が受信,ネットワークに異常発生の可能性")
+                mysql.insert_log("[system] " +  client_data[wifi_mac].name + "のBT電波を他の機器が受信,ネットワークに異常発生の可能性",5)
                 client_data[wifi_mac].status = -2
                 break
 
@@ -285,17 +312,20 @@ def check_connection(client_data,global_ip_cnt):
             if not global_ip_cnt.get(global_ip_data) == None:
                 global_ip_cnt_data = global_ip_cnt[global_ip_data]
                 if(client_data[wifi_mac].bt_result["ng"] >= global_ip_cnt_data and client_data[wifi_mac].ping_result["ng"] >= global_ip_cnt_data):
+                    mysql.insert_log("[system] " +  client_data[wifi_mac].name + "同一セグメント上のIoT機器がBTとPINGを受信できません，電源遮断の可能性 切断処理を行います．",5)
                     print_log("[system] " +  client_data[wifi_mac].name + "同一セグメント上のIoT機器がBTとPINGを受信できません，電源遮断の可能性 切断処理を行います．")
                     client_data[wifi_mac].status = -2
                     del_client.append(wifi_mac)
                     break
             else:
                 print_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません ネットワークに異常がある可能性があります，タイムアウトまで待機")
+                mysql.insert_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません ネットワークに異常がある可能性があります，タイムアウトまで待機",5)
                 client_data[wifi_mac].status = -2
 
     for key in del_client:
         time_write(key)
         print_log("[disconnect] <wifi_mac> " + client_data[key].wifi_mac + "  <msg> --")
+        mysql.insert_log("[disconnect] <wifi_mac> " + client_data[key].wifi_mac + "  <msg> --",4)
         del client_data[key]
 
 def time_write(wifi_mac):
@@ -315,8 +345,11 @@ def print_log(data):
     print("[" + dt_now.strftime('%Y-%m-%d %H:%M:%S') + "] " + str(data))
 
 if __name__ == "__main__":
+    mysql = Mysql()
     log = Log("elapsed_time,calc_time",FILE_MEMO)
     print_log("[system] VERSION: " + VERSION)
+
+    mysql.insert_log("監視サーバを起動しました",1)
 
     client_data = {} # IoT機器のデータを入れるDictionary
     global_ip_cnt = {} # グローバルIP毎の接続台数を入れるDictionary(warningは入れず)
