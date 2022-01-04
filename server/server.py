@@ -5,11 +5,14 @@ import os
 import json
 import time
 
-version = "1.3.2_e"
-broker = '192.168.0.250'
-port = 1883
+FILE_MEMO = "台数3台"
 
-topics = ("s/ping","s/join","s/disconnect","s/return_bt","s/return_ping","s/die")
+VERSION = "1.3.3_e"
+BROKER = '192.168.0.250'
+PORT = 1883
+
+TOPICS = ("s/ping","s/join","s/disconnect","s/return_bt","s/return_ping","s/die")
+
 ping = {}
 
 class Log:
@@ -112,7 +115,7 @@ def connect_mqtt():
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
     client.on_publish = on_publish
-    client.connect(broker, port)
+    client.connect(BROKER, PORT)
     return client
 
 def on_connect(client, userdata, flags, rc):
@@ -145,7 +148,7 @@ def subscribe(client):
     """
     MQTTサブスクライブトピックの設定
     """
-    for topic in topics:
+    for topic in TOPICS:
         print_log("[system] subtopic: " + topic)
         client.subscribe(topic)
     client.on_message = on_message
@@ -312,8 +315,8 @@ def print_log(data):
     print("[" + dt_now.strftime('%Y-%m-%d %H:%M:%S') + "] " + str(data))
 
 if __name__ == "__main__":
-    log = Log("elapsed_time,calc_time","台数2台")
-    print_log("[system] version: " + version)
+    log = Log("elapsed_time,calc_time",FILE_MEMO)
+    print_log("[system] VERSION: " + VERSION)
 
     client_data = {} # IoT機器のデータを入れるDictionary
     global_ip_cnt = {} # グローバルIP毎の接続台数を入れるDictionary(warningは入れず)
