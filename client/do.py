@@ -12,7 +12,7 @@ import config
 import machine
 import os
 
-VERSION = "1.2.0"
+VERSION = "1.3.0_e"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]

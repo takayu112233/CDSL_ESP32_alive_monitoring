@@ -5,7 +5,7 @@ import os
 import json
 import time
 
-version = "1.3.1"
+version = "1.3.2_e"
 broker = '192.168.0.250'
 port = 1883
 
