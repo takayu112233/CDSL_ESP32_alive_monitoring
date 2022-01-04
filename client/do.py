@@ -9,13 +9,16 @@ import urequests
 import uping
 import ubluetooth
 import config
+import machine
+import os
 
 VERSION = "1.2.0"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
-DEBAG_DISCONNECT_TIME = -1#[s] -1は無効
 SERVER = "192.168.0.250"
+
+DISCONNECT_TIME_LIMIT = 20 #[s]
 
 NAME = config.NAME
 
@@ -107,6 +110,10 @@ def server_disconnect(wifi_mac,mqtt_client):
     ujson.dumps(dic)
     pub("s/disconnect", ujson.dumps(dic) ,mqtt_client)
     mqtt_client.disconnect() 
+
+def send_die_time(wifi_mac,elapsed_time,mqtt_client):
+    dic = {"wifi_mac":wifi_mac, "elapsed_time":elapsed_time}
+    pub("s/die", ujson.dumps(dic), mqtt_client)
 
 def send_join_packet(name,version,wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,keep_alive_time,heart_beat_time):
     """
@@ -232,10 +239,25 @@ def bt_send_end(ble):
     print("[ble_send] : " + "stop")
     ble.active(False)
 
-
-
 if __name__ == "__main__":
+    if("time.txt" in os.listdir()):
+        f = open('time.txt', 'r')
+        disconnect_time = int(f.read())  
+        f.close()
 
+        if(disconnect_time > DISCONNECT_TIME_LIMIT):
+            disconnect_time = 0
+
+        f = open('time.txt', 'w')
+        f.write(str(disconnect_time + 1))
+        f.close()
+    else:   
+        disconnect_time = 0 
+        f = open('time.txt', 'w')
+        f.write(str(disconnect_time + 1))
+        f.close()
+
+    print("[system] start disconnect_time:" + str(disconnect_time)) 
     garbage_collection()
     wifi_mac = get_wifi_mac(wifi)
     global_ip = get_global_ip()
@@ -256,12 +278,16 @@ if __name__ == "__main__":
     tim = ping_timer_start(HEART_BEAT_TIME)
 
     time_count = 0
-    if(DEBAG_DISCONNECT_TIME != -1):   
+    if(disconnect_time != -1):   
         while True:
-            if(time_count >= DEBAG_DISCONNECT_TIME * 10):
+            if(time_count >= disconnect_time * 10):
                 tim.deinit() 
-                server_disconnect(wifi_mac,mqtt_client)
-                bt_send_end(ble)
+                #server_disconnect(wifi_mac,mqtt_client)
+                #bt_send_end(ble)
+                send_die_time(wifi_mac,disconnect_time,mqtt_client)
+                sec = 15
+                print("[system] " + str(sec) + "s sleep")
+                machine.deepsleep(1000 * sec)
                 break
             mqtt_client.check_msg()
             time.sleep(0.1)

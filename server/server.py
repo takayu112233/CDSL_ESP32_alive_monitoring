@@ -9,20 +9,19 @@ version = "1.3.1"
 broker = '192.168.0.250'
 port = 1883
 
-topics = ("s/ping","s/join","s/disconnect","s/return_bt","s/return_ping")
+topics = ("s/ping","s/join","s/disconnect","s/return_bt","s/return_ping","s/die")
 ping = {}
-disconnect_time = {}
 
 class Log:
     """
     ログ書き出し用
     """
-    def __init__(self,first="text"):
+    def __init__(self,first="text",name=""):
         dt_now = datetime.datetime.now()
         dir = "./data"
         if not os.path.exists(dir):
             os.makedirs(dir)
-        self.out_file_path = dir + "/" + dt_now.strftime('%Y%m%d_%H%M%S') + ".csv"
+        self.out_file_path = dir + "/" + name + dt_now.strftime('%Y%m%d_%H%M%S') + ".csv"
         with open(self.out_file_path, mode='w') as f:
             dt_now = datetime.datetime.now()
             f.write("time" + "," + str(first) + "\n")
@@ -59,7 +58,24 @@ class Client:
         self.bt_result["ok"] = 0
         self.bt_result["ng"] = 0
 
+        self.calc_time_flag = False #実験用
+
         print_log("[join] <wifi_mac> " + self.wifi_mac + " <name> " + self.name)
+
+    def set_die_time(self,elapsed_time):
+        """
+        [実験用]接続時間と切断予定時間を記録する
+        """
+        self.calc_time_flag = True
+        self.die_time = time.time()
+        self.elapsed_time = elapsed_time
+    
+    def calc_time(self):
+        """
+        [実験用]切断から切断処理までの時間を計算する
+        """
+        return time.time() - self.die_time
+        
 
     def receive_ping(self):
         """
@@ -146,6 +162,13 @@ def on_message(client, userdata, msg):
     MQTTメッセージの受信した際の処理
     """
     topic_data = msg.topic.split("/")
+
+    if(topic_data[1]=="die"):
+        client_data_list = json.loads(msg.payload.decode())
+        wifi_mac = client_data_list["wifi_mac"]
+        client_data[wifi_mac].set_die_time(client_data_list["elapsed_time"])
+        print("IoT機器機能停止 elapsed_time: " + str(client_data_list["elapsed_time"]))
+
     if(topic_data[1] == "join"):
         client_data_list = json.loads(msg.payload.decode())
 
@@ -234,6 +257,7 @@ def check_time(client_data):
             del_client.append(i)
 
     for key in del_client:
+        time_write(key)
         del client_data[key]
     
 def check_connection(client_data,global_ip_cnt):
@@ -267,8 +291,17 @@ def check_connection(client_data,global_ip_cnt):
                 client_data[wifi_mac].status = -2
 
     for key in del_client:
+        time_write(key)
         print_log("[disconnect] <wifi_mac> " + client_data[key].wifi_mac + "  <msg> --")
         del client_data[key]
+
+def time_write(wifi_mac):
+    if(client_data[wifi_mac].calc_time_flag):
+        calc_time = str(client_data[wifi_mac].calc_time())
+        elapsed_time = client_data[wifi_mac].elapsed_time
+        text = str(elapsed_time) + "," + str(calc_time)
+        print("[system] 実験結果: " + text)
+        log.write(text)
                 
 def print_log(data):
     """
@@ -277,10 +310,9 @@ def print_log(data):
     global log
     dt_now = datetime.datetime.now()
     print("[" + dt_now.strftime('%Y-%m-%d %H:%M:%S') + "] " + str(data))
-    log.write(str(data))
 
 if __name__ == "__main__":
-    log = Log()
+    log = Log("elapsed_time,calc_time","台数2台")
     print_log("[system] version: " + version)
 
     client_data = {} # IoT機器のデータを入れるDictionary
