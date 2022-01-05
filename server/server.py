@@ -6,9 +6,9 @@ import json
 import time
 import mysql.connector
 
-FILE_MEMO = "台数5台"
+FILE_MEMO = "k5s"
 
-VERSION = "1.4.4_e"
+VERSION = "1.4.4_e2"
 BROKER = '192.168.0.250'
 PORT = 1883
 

@@ -12,14 +12,14 @@ import config
 import machine
 import os
 
-VERSION = "1.3.0_e"
+VERSION = "1.3.1_e2"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
 
 BROKER_SERVER = "192.168.0.250"
 
-DISCONNECT_TIME_LIMIT = -1 #[s] -1で試験用プログラムを実施しない
+DISCONNECT_TIME_LIMIT = 121 #[s] -1で試験用プログラムを実施しない
 
 NAME = config.NAME
 
