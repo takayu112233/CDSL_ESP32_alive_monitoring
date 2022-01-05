@@ -12,7 +12,7 @@ import config
 import machine
 import os
 
-VERSION = "1.3.0_e"
+VERSION = "1.3.1"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
@@ -265,7 +265,7 @@ if __name__ == "__main__":
         print("[system] start disconnect_time:" + str(disconnect_time)) 
     else:
         disconnect_time = -1
-        
+
     garbage_collection()
     wifi_mac = get_wifi_mac(wifi)
     global_ip = get_global_ip()
