@@ -12,7 +12,7 @@ import config
 import machine
 import os
 
-VERSION = "1.3.1"
+VERSION = "1.4.1"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
@@ -143,8 +143,16 @@ def ping_timer_start(ms=5000):
     ハートビート用タイマーの開始
     """
     tim = machine.Timer(3)
-    tim.init(period=(ms*1000),mode=tim.PERIODIC,callback=lambda t:send_ping())
+    tim.init(period=(ms*1000),mode=tim.PERIODIC,callback=lambda t:timer_do())
     return tim
+
+def timer_do():
+    """
+    接続後1秒毎に呼ばれる関数
+    """
+    global ble
+    bt_send_start(ble)
+    send_ping()
 
 def send_ping():
     """
