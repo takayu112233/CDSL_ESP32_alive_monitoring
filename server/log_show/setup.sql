@@ -1,8 +1,7 @@
 CREATE DATABASE iot CHARACTER SET utf8 COLLATE utf8_general_ci;
 USE iot;
-CREATE USER 'user'@'localhost';
+CREATE USER 'user'@'localhost' IDENTIFIED BY 'asdf1234';
 GRANT ALL ON *.* to 'user'@'localhost';
-SET PASSWORD FOR 'user'@'localhost' = PASSWORD('asdf1234');
 
 CREATE TABLE log_t(
 log_id INT AUTO_INCREMENT,
