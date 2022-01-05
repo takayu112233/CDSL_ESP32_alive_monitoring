@@ -87,6 +87,11 @@ def sub_cb(topic, msg):
         if(topic[2] == "want_join"):
             send_join_packet(NAME,VERSION,wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,KEEP_ALIVE_TIME,HEART_BEAT_TIME)
 
+        if(topic[2] == "want_prog_suicide"):
+            bt_send_start(ble)
+            tim.deinit() 
+            data = 1/0
+
         elif(topic[2] == "want_ping"):
             data = msg.split(",")
             result = icmp_check(data[0])
