@@ -8,7 +8,7 @@ import mysql.connector
 
 FILE_MEMO = "台数5台"
 
-VERSION = "1.4.3_e"
+VERSION = "1.4.4_e"
 BROKER = '192.168.0.250'
 PORT = 1883
 
@@ -279,7 +279,7 @@ def check_time(client_data):
     
     del_client = []
     for i in client_data:
-        if client_data[i].keep_alive_time * 1.5 - (now_time - client_data[i].lasttime) <= 0 and not client_data[i].status != -1:
+        if client_data[i].keep_alive_time * 1.5 - (now_time - client_data[i].lasttime) <= 0:
             mysql.insert_log("[disconnect] <wifi_mac> " + client_data[i].wifi_mac + "  <msg> KeepAliveTime timeout",4)
             print_log("[disconnect] <wifi_mac> " + client_data[i].wifi_mac + "  <msg> KeepAliveTime timeout")
             del_client.append(i)
