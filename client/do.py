@@ -12,7 +12,7 @@ import config
 import machine
 import os
 
-VERSION = "1.4.1"
+VERSION = "1.5.1_e"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
@@ -76,6 +76,7 @@ def sub_cb(topic, msg):
     global mqtt_client
     global global_ip
     global search_list
+    global wifi
 
     topic = str(topic, 'UTF-8')
     msg = str(msg, 'UTF-8')
@@ -91,6 +92,10 @@ def sub_cb(topic, msg):
             bt_send_start(ble)
             tim.deinit() 
             data = 1/0
+
+        if(topic[2] == "want_net_suicide"):
+            bt_send_start(ble)
+            wifi.disconnect()
 
         elif(topic[2] == "want_ping"):
             data = msg.split(",")
