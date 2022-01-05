@@ -12,11 +12,7 @@ import config
 import machine
 import os
 
-<<<<<<< HEAD
-VERSION = "1.3.1_e2"
-=======
-VERSION = "1.5.1_e"
->>>>>>> experiment_information
+VERSION = "1.6.0_e2"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]

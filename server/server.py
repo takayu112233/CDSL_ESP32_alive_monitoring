@@ -6,15 +6,9 @@ import json
 import time
 import mysql.connector
 
-<<<<<<< HEAD
-FILE_MEMO = "k5s"
-
-VERSION = "1.4.4_e2"
-=======
 FILE_MEMO = ""
 
-VERSION = "1.4.5"
->>>>>>> experiment_information
+VERSION = "1.5.0_e2"
 BROKER = '192.168.0.250'
 PORT = 1883
 
