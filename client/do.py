@@ -16,11 +16,15 @@ VERSION = "1.3.0_e"
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
-SERVER = "192.168.0.250"
+
+BROKER_SERVER = "192.168.0.250"
 
 DISCONNECT_TIME_LIMIT = 20 #[s]
 
 NAME = config.NAME
+
+if not 'broker_server' in locals():
+    broker_server = BROKER_SERVER
 
 def get_wifi_mac(wifi):
     """
@@ -272,7 +276,8 @@ if __name__ == "__main__":
 
     sub_topics = ("c/all/#" , "c/" + global_ip + "/#" , "c/" + wifi_mac + "/#")
 
-    mqtt_client = mqtt_connect(SERVER,sub_topics,NAME)
+    print("[system] broker_server: " + broker_server)
+    mqtt_client = mqtt_connect(broker_server,sub_topics,NAME)
 
     send_join_packet(NAME,VERSION,wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,KEEP_ALIVE_TIME,HEART_BEAT_TIME)
     tim = ping_timer_start(HEART_BEAT_TIME)

@@ -13,16 +13,17 @@ def do_connect(wifi_config):
             for config in wifi_config:
                 if(scan[0].decode() == config[0]):
                     sta_if.connect(config[0], config[1])
+                    broker_server = config[2]
 
         while not sta_if.isconnected():
             pass
     print('connected: ' , sta_if.config('essid'))
     print('network config:' , sta_if.ifconfig())
-    return sta_if
+    return sta_if,broker_server
 
 if __name__ == "__main__":
     print("power on:" + config.NAME)
-    wifi = do_connect(config.WIFI_CONFIG)
+    wifi,broker_server = do_connect(config.NET_CONFIG)
     execfile("do.py")
     
 
