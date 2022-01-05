@@ -6,9 +6,15 @@ import json
 import time
 import mysql.connector
 
+<<<<<<< HEAD
 FILE_MEMO = "k5s"
 
 VERSION = "1.4.4_e2"
+=======
+FILE_MEMO = ""
+
+VERSION = "1.4.5"
+>>>>>>> experiment_information
 BROKER = '192.168.0.250'
 PORT = 1883
 
@@ -318,8 +324,8 @@ def check_connection(client_data,global_ip_cnt):
                     del_client.append(wifi_mac)
                     break
             else:
-                print_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません ネットワークに異常がある可能性があります，タイムアウトまで待機")
-                mysql.insert_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません ネットワークに異常がある可能性があります，タイムアウトまで待機",5)
+                print_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません ネットワークに異常がある可能性があります，Keep Alive Time タイムアウトまで待機")
+                mysql.insert_log("[system] " +  client_data[wifi_mac].name + "と通信が可能な機器がありません ネットワークに異常がある可能性があります，Keep Alive Time タイムアウトまで待機",5)
                 client_data[wifi_mac].status = -2
 
     for key in del_client:

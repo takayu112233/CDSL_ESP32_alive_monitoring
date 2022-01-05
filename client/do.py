@@ -12,7 +12,11 @@ import config
 import machine
 import os
 
+<<<<<<< HEAD
 VERSION = "1.3.1_e2"
+=======
+VERSION = "1.5.1_e"
+>>>>>>> experiment_information
 
 HEART_BEAT_TIME = 5 #[s]
 KEEP_ALIVE_TIME = 60 #[s]
@@ -76,6 +80,7 @@ def sub_cb(topic, msg):
     global mqtt_client
     global global_ip
     global search_list
+    global wifi
 
     topic = str(topic, 'UTF-8')
     msg = str(msg, 'UTF-8')
@@ -86,6 +91,15 @@ def sub_cb(topic, msg):
     if(len(topic) == 3):
         if(topic[2] == "want_join"):
             send_join_packet(NAME,VERSION,wifi_mac,bt_mac,global_ip,local_ip,mqtt_client,KEEP_ALIVE_TIME,HEART_BEAT_TIME)
+
+        if(topic[2] == "want_prog_suicide"):
+            bt_send_start(ble)
+            tim.deinit() 
+            data = 1/0
+
+        if(topic[2] == "want_net_suicide"):
+            bt_send_start(ble)
+            wifi.disconnect()
 
         elif(topic[2] == "want_ping"):
             data = msg.split(",")
@@ -143,8 +157,16 @@ def ping_timer_start(ms=5000):
     ハートビート用タイマーの開始
     """
     tim = machine.Timer(3)
-    tim.init(period=(ms*1000),mode=tim.PERIODIC,callback=lambda t:send_ping())
+    tim.init(period=(ms*1000),mode=tim.PERIODIC,callback=lambda t:timer_do())
     return tim
+
+def timer_do():
+    """
+    接続後1秒毎に呼ばれる関数
+    """
+    global ble
+    bt_send_start(ble)
+    send_ping()
 
 def send_ping():
     """
@@ -265,7 +287,7 @@ if __name__ == "__main__":
         print("[system] start disconnect_time:" + str(disconnect_time)) 
     else:
         disconnect_time = -1
-        
+
     garbage_collection()
     wifi_mac = get_wifi_mac(wifi)
     global_ip = get_global_ip()
