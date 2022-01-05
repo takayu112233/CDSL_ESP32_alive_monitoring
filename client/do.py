@@ -19,7 +19,7 @@ KEEP_ALIVE_TIME = 60 #[s]
 
 BROKER_SERVER = "192.168.0.250"
 
-DISCONNECT_TIME_LIMIT = 20 #[s]
+DISCONNECT_TIME_LIMIT = -1 #[s] -1で試験用プログラムを実施しない
 
 NAME = config.NAME
 
@@ -244,24 +244,28 @@ def bt_send_end(ble):
     ble.active(False)
 
 if __name__ == "__main__":
-    if("time.txt" in os.listdir()):
-        f = open('time.txt', 'r')
-        disconnect_time = int(f.read())  
-        f.close()
+    if(not DISCONNECT_TIME_LIMIT == -1):
+        if("time.txt" in os.listdir()):
+            f = open('time.txt', 'r')
+            disconnect_time = int(f.read())  
+            f.close()
 
-        if(disconnect_time > DISCONNECT_TIME_LIMIT):
-            disconnect_time = 0
+            if(disconnect_time > DISCONNECT_TIME_LIMIT):
+                disconnect_time = 0
 
-        f = open('time.txt', 'w')
-        f.write(str(disconnect_time + 1))
-        f.close()
-    else:   
-        disconnect_time = 0 
-        f = open('time.txt', 'w')
-        f.write(str(disconnect_time + 1))
-        f.close()
+            f = open('time.txt', 'w')
+            f.write(str(disconnect_time + 1))
+            f.close()
+        else:   
+            disconnect_time = 0 
+            f = open('time.txt', 'w')
+            f.write(str(disconnect_time + 1))
+            f.close()
 
-    print("[system] start disconnect_time:" + str(disconnect_time)) 
+        print("[system] start disconnect_time:" + str(disconnect_time)) 
+    else:
+        disconnect_time = -1
+        
     garbage_collection()
     wifi_mac = get_wifi_mac(wifi)
     global_ip = get_global_ip()
