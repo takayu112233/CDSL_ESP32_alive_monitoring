@@ -6,9 +6,9 @@ import json
 import time
 import mysql.connector
 
-FILE_MEMO = ""
+FILE_MEMO = "時間計測"
 
-VERSION = "1.5.0_e2"
+VERSION = "1.5.1_e2"
 BROKER = '192.168.0.250'
 PORT = 1883
 
@@ -187,62 +187,67 @@ def on_message(client, userdata, msg):
     """
     MQTTメッセージの受信した際の処理
     """
-    topic_data = msg.topic.split("/")
+    try:
+        topic_data = msg.topic.split("/")
 
-    if(topic_data[1]=="die"):
-        client_data_list = json.loads(msg.payload.decode())
-        wifi_mac = client_data_list["wifi_mac"]
-        client_data[wifi_mac].set_die_time(client_data_list["elapsed_time"])
-        print("IoT機器機能停止 elapsed_time: " + str(client_data_list["elapsed_time"]))
+        if(topic_data[1]=="die"):
+            client_data_list = json.loads(msg.payload.decode())
+            wifi_mac = client_data_list["wifi_mac"]
+            client_data[wifi_mac].set_die_time(client_data_list["elapsed_time"])
+            print("IoT機器機能停止 elapsed_time: " + str(client_data_list["elapsed_time"]))
 
-    if(topic_data[1] == "join"):
-        client_data_list = json.loads(msg.payload.decode())
+        if(topic_data[1] == "join"):
+            client_data_list = json.loads(msg.payload.decode())
 
-        global_ip = client_data_list["global_ip"]
-        local_ip = client_data_list["local_ip"]
-        name = client_data_list["name"]
-        bt_mac = client_data_list["bt_mac"]
-        wifi_mac = client_data_list["wifi_mac"]
-        heart_beat_time = int(client_data_list["heart_beat_time"])
-        keep_alive_time = int(client_data_list["keep_alive_time"])
-        version = client_data_list["version"]
+            global_ip = client_data_list["global_ip"]
+            local_ip = client_data_list["local_ip"]
+            name = client_data_list["name"]
+            bt_mac = client_data_list["bt_mac"]
+            wifi_mac = client_data_list["wifi_mac"]
+            heart_beat_time = int(client_data_list["heart_beat_time"])
+            keep_alive_time = int(client_data_list["keep_alive_time"])
+            version = client_data_list["version"]
 
-        client_data[client_data_list["wifi_mac"]] = Client(global_ip,local_ip,name,bt_mac,wifi_mac,heart_beat_time,keep_alive_time,version)
-    
-    if(topic_data[1] == "ping"):
-        client_data_list = json.loads(msg.payload.decode())
+            client_data[client_data_list["wifi_mac"]] = Client(global_ip,local_ip,name,bt_mac,wifi_mac,heart_beat_time,keep_alive_time,version)
+        
+        if(topic_data[1] == "ping"):
+            client_data_list = json.loads(msg.payload.decode())
 
-        if(client_data.get(client_data_list["wifi_mac"]) == None):
-            print_log("[system] 接続処理未実行 wifimac: " + client_data_list["wifi_mac"])
-            topic = "c/" + client_data_list["wifi_mac"] + "/want_join"
-            msg = client_data_list["wifi_mac"]
-            publish(topic , msg)
-        else:
-            client_data[client_data_list["wifi_mac"]].receive_ping()
+            if(client_data.get(client_data_list["wifi_mac"]) == None):
+                print_log("[system] 接続処理未実行 wifimac: " + client_data_list["wifi_mac"])
+                topic = "c/" + client_data_list["wifi_mac"] + "/want_join"
+                msg = client_data_list["wifi_mac"]
+                publish(topic , msg)
+            else:
+                client_data[client_data_list["wifi_mac"]].receive_ping()
 
-    if(topic_data[1] == "return_bt"):
-        return_bt_data_list = json.loads(msg.payload.decode())
-        wifi_mac = return_bt_data_list["wifi_mac"]
-        if return_bt_data_list["result"] == "ok":
-            client_data[return_bt_data_list["wifi_mac"]].bt_result["ok"] += 1
-        if return_bt_data_list["result"] == "ng":
-            client_data[wifi_mac].bt_result["ng"] += 1
-        print_log("[system] return_bt" + wifi_mac + " <ng>" + str(client_data[wifi_mac].bt_result["ng"]) + " <ok>" + str(client_data[wifi_mac].bt_result["ok"]))
+        if(topic_data[1] == "return_bt"):
+            return_bt_data_list = json.loads(msg.payload.decode())
+            wifi_mac = return_bt_data_list["wifi_mac"]
+            if return_bt_data_list["result"] == "ok":
+                client_data[return_bt_data_list["wifi_mac"]].bt_result["ok"] += 1
+            if return_bt_data_list["result"] == "ng":
+                client_data[wifi_mac].bt_result["ng"] += 1
+            print_log("[system] return_bt" + wifi_mac + " <ng>" + str(client_data[wifi_mac].bt_result["ng"]) + " <ok>" + str(client_data[wifi_mac].bt_result["ok"]))
 
-    if(topic_data[1] == "return_ping"):
-        return_ping_data_list = json.loads(msg.payload.decode())
-        wifi_mac = return_ping_data_list["wifi_mac"]
-        if return_ping_data_list["result"] == "ok":
-            client_data[wifi_mac].ping_result["ok"] += 1
-        if return_ping_data_list["result"] == "ng":
-            client_data[wifi_mac].ping_result["ng"] += 1
-        print_log("[system] return_ping" + wifi_mac + " <ng>" + str(client_data[wifi_mac].ping_result["ng"]) + " <ok>" + str(client_data[wifi_mac].ping_result["ok"]))
+        if(topic_data[1] == "return_ping"):
+            return_ping_data_list = json.loads(msg.payload.decode())
+            wifi_mac = return_ping_data_list["wifi_mac"]
+            if return_ping_data_list["result"] == "ok":
+                client_data[wifi_mac].ping_result["ok"] += 1
+            if return_ping_data_list["result"] == "ng":
+                client_data[wifi_mac].ping_result["ng"] += 1
+            print_log("[system] return_ping" + wifi_mac + " <ng>" + str(client_data[wifi_mac].ping_result["ng"]) + " <ok>" + str(client_data[wifi_mac].ping_result["ok"]))
 
-    if(topic_data[1]=="disconnect"):
-        return_ping_data_list = json.loads(msg.payload.decode())
-        wifi_mac = return_ping_data_list["wifi_mac"]
-        del client_data[wifi_mac]
-        print_log("[disconnect] <wifi_mac> " + wifi_mac + "  <msg> disconnect msg receive")
+        if(topic_data[1]=="disconnect"):
+            return_ping_data_list = json.loads(msg.payload.decode())
+            wifi_mac = return_ping_data_list["wifi_mac"]
+            del client_data[wifi_mac]
+            print_log("[disconnect] <wifi_mac> " + wifi_mac + "  <msg> disconnect msg receive")
+
+    except Exception as e:
+        print(type(e))
+        print(e)
 
 def want_ping_and_bt(global_ip,bt_mac,wifi_mac,local_ip):
     """
