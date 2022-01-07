@@ -1,4 +1,6 @@
 import config
+import time
+import machine
 
 def do_connect(wifi_config):
     import network
@@ -15,7 +17,13 @@ def do_connect(wifi_config):
                     sta_if.connect(config[0], config[1])
                     broker_server = config[2]
 
+        cnt = 0
+
         while not sta_if.isconnected():
+            cnt += 1
+            time.sleep(1)
+            if(cnt >= 20):
+                machine.reset()
             pass
     print('connected: ' , sta_if.config('essid'))
     print('network config:' , sta_if.ifconfig())
